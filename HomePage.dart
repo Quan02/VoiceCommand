@@ -8,6 +8,7 @@ import 'Email.dart';
 import 'Phone.dart';
 import 'SMS.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'speech_to_text_service.dart';
 //This is the main page of app
 //It contains each button to different page
 //setting and start recording button
@@ -16,10 +17,10 @@ import 'package:google_fonts/google_fonts.dart';
 //Navigator.pop(context, result);
 
 class HomePage extends StatefulWidget {
-  const HomePage({Key? key}) : super(key: key);
+  const HomePage({Key? key, required SpeechToText speechToText}) : super(key: key);
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  _HomePageState createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
@@ -39,15 +40,17 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   Color sendSmsColor = Colors.blue.withOpacity(0.3);
 
   //create instance of SpeechToText
-  final SpeechToText speech = SpeechToText();
-  //SpeechToText speech = SpeechToText();
+  //final SpeechToText _speechToText = SpeechToText();
+  //SpeechToText _speechToText = SpeechToText();
 
   //_speech Enabled control whether app is listening
   //if speechEnabled true, mean currently app is listening to user
-  bool _speechEnabled = false;
+  //bool _speechEnabled = false;
 
   //variable control microphone to keep working
-  bool _keepListening = true;
+  bool _isListening = false;
+  bool _keepListening = false;
+  //bool _keepListening = true;
 
   //confirmation state, 0 mean no function is known
   //1 mean ask for confirmation 2 means go to function page
@@ -72,18 +75,17 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   @override
   void initState() {
     // TODO: implement initState
-    _startListening();
+
     super.initState();
-    _initSpeech();
+    SpeechToTextUtils.configureSpeechToText();
+    //_initSpeech();
     _initController();
-    _keepListening = true;
+
   }
-
-
 
   /*@override
   void dispose() {
-    speech.cancel();
+    _speechToText.cancel();
     super.dispose();
   }*/
 
@@ -101,35 +103,55 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     controller.stop(canceled: true);
   }
 
-  //function to initialize the app
-  void _initSpeech() async {
-    //
-    _speechEnabled = await speech.initialize();
-    setState(() {});
+  void _startRecording() async {
+    await SpeechToTextService.startRecording();
+    setState(() {
+      _isListening = true;
+      _keepListening = true;
+    });
+    while (_keepListening) {
+      await Future.delayed(Duration(milliseconds: 100));
+    }
   }
 
+  void _stopRecording() {
+    SpeechToTextService.stopRecording();
+    setState(() {
+      _isListening = false;
+      _keepListening = false;
+    });
+  }
+
+
+  //function to initialize the app
+  /*void _initSpeech() async {
+    //
+    _speechEnabled = await _speechToText.initialize();
+    setState(() {});
+  }*/
+
   //call while each time start a speech recognition
-  void _startListening() async{
-    //await speech.listen()
+  /*void _startListening() async{
+    //await _speechToText.listen()
     while(_keepListening)
       {
-        await speech.listen(onResult: _onSpeechResult,listenFor: timeListen, pauseFor: timePaused );
+        await _speechToText.listen(onResult: _onSpeechResult,listenFor: timeListen, pauseFor: timePaused );
         //print('$_translatedWords');
         _checkFunction(userSaid: _translatedWords);
 
 
       }
     setState(() {});
-  }
+  }*/
 
   //stop the speech recognition after timeout
-  void _stopListening() async{
+  /*void _stopListening() async{
     print('have stop');
 
 
-    await speech.stop();
+    await _speechToText.stop();
     setState(() {});
-  }
+  }*/
 
   void _updateDuration(int newValue)
   {
@@ -140,14 +162,14 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
 
 
-  void _onSpeechResult(SpeechRecognitionResult result)
+  /*void _onSpeechResult(SpeechRecognitionResult result)
   {
     setState(() {
       _translatedWords = result.recognizedWords;
       //_checkFunction(userSaid: _translatedWords);
       //print(_translatedWords);
     });
-  }
+  }*/
 
   //function to adjust the _duration on each page
   void _onLineDrag(DragUpdateDetails details)
@@ -237,14 +259,14 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                 decoration: BoxDecoration(
                   border: Border.all(
                     color: Colors.black,
-                    width: 1,
+                    width: 2,
                   ),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min, // add this line to wrap the column content
                   children: [
                     Container(
-                      padding: EdgeInsets.all(10),
+                      padding: EdgeInsets.all(20),
                       width: 200,
                       height: 100,
                       child: Text(
@@ -261,15 +283,14 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                       ),
                     ),
                     Container(
-                      padding: EdgeInsets.all(5.0),
-                      margin: EdgeInsets.all(5),
+                      padding: EdgeInsets.all(20),
                       width: 200,
-                      height: 60,
-                        decoration: BoxDecoration(
+                      height: 80,
+                      decoration: BoxDecoration(
                         color: sendEmailColor,
                         border: Border.all(
-                          color: Colors.blue,
-                          width: 1,
+                          color: Colors.black,
+                          width: 2,
                         ),
                       ),
                       child: Center(
@@ -285,20 +306,15 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                         ),
                       ),
                     ),
-                    //
-                    /*(
-                      height: 5,
-                    ),*/
                     Container(
-                      padding: EdgeInsets.all(5.0),
-                      margin: EdgeInsets.all(5),
+                      padding: EdgeInsets.all(20),
                       width: 200,
-                      height: 60,
+                      height: 80,
                       decoration: BoxDecoration(
                         color: phoneCallColor,
                         border: Border.all(
                           color: Colors.black,
-                          width: 1,
+                          width: 2,
                         ),
                       ),
                       child: Center(
@@ -315,15 +331,14 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                       ),
                     ),
                     Container(
-                      padding: EdgeInsets.all(5.0),
-                      margin: EdgeInsets.all(5),
+                      padding: EdgeInsets.all(20),
                       width: 200,
-                      height: 60,
+                      height: 80,
                       decoration: BoxDecoration(
                         color: whatsappColor,
                         border: Border.all(
                           color: Colors.black,
-                          width: 1,
+                          width: 2,
                         ),
                       ),
                       child: Center(
@@ -340,15 +355,14 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                       ),
                     ),
                     Container(
-                      padding: EdgeInsets.all(5.0),
-                      margin: EdgeInsets.all(5),
+                      padding: EdgeInsets.all(20),
                       width: 200,
-                      height: 60,
+                      height: 80,
                       decoration: BoxDecoration(
                         color: sendSmsColor,
                         border: Border.all(
                           color: Colors.black,
-                          width: 1,
+                          width: 2,
                         ),
                       ),
                       child: Center(
@@ -494,15 +508,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               padding: EdgeInsets.all(10),
               // a button to control if the phone is listening or not
               child: FloatingActionButton(
-                onPressed:
-
-                speech.isNotListening?_startListening:  _stopListening,
-                  //If not yet listening then speech start, otherwise stop
-
-
-                tooltip: 'Listen',
-                child: Icon(speech.isNotListening? Icons.mic_off : Icons.mic),
-
+                onPressed: _isListening ? _stopRecording : _startRecording,
+                child: Icon(_isListening ? Icons.stop : Icons.mic),
               ),
             ),
             /*LinearProgressIndicator(
@@ -617,12 +624,12 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                 _changeQuestion();
                 _changeBorder(text: 'No');
                 _translatedWords = '';
-                //_keepListening = false;
+                _keepListening = false;
                 setState(() {
                 });
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => EmailFunction(speech:speech,durationpage: _durationpage)),
+                  MaterialPageRoute(builder: (context) => EmailFunction(durationpage: _durationpage)),
                 );
 
 // Pop back to MainPage after 30 seconds
@@ -643,7 +650,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   });
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) =>PhonePage(speech:speech,durationpage :_durationpage)),
+                    MaterialPageRoute(builder: (context) =>PhonePage(durationpage :_durationpage)),
                   );
 
                     // Pop back to MainPage after 30 seconds
@@ -663,7 +670,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                     });
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) =>WhatSapp(speech:speech,durationpage :_durationpage)),
+                      MaterialPageRoute(builder: (context) =>WhatSapp(durationpage :_durationpage)),
                     );
 
                     // Pop back to MainPage after 30 seconds
@@ -683,7 +690,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                     });
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) =>SendSMS(speech:speech,durationpage :_durationpage)),
+                      MaterialPageRoute(builder: (context) =>SendSMS(durationpage :_durationpage)),
                     );
                     // Pop back to MainPage after 30 seconds
                     Future.delayed(Duration(seconds: _durationpage)).then((value) {
@@ -709,5 +716,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     super.setState(fn);
   }
 }
+
+
+
 
 
